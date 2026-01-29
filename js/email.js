@@ -47,12 +47,10 @@ const EmailService = {
      * @returns {string} Formatted data string
      */
     formatPhotoData(photoData) {
-        const {
-            location,
-            weather,
-            settings,
-            timestamp
-        } = photoData;
+        const location = photoData?.location || {};
+        const weather = photoData?.weather || {};
+        const settings = photoData?.settings || {};
+        const timestamp = photoData?.timestamp || Date.now();
 
         const date = new Date(timestamp);
         const dateStr = date.toLocaleDateString('en-US', {
@@ -66,37 +64,53 @@ const EmailService = {
             minute: '2-digit'
         });
 
+        // Use safe fallbacks for all values
+        const safeGet = (val, fallback = 'N/A') => (val !== undefined && val !== null && val !== '') ? val : fallback;
+
         return `
-═══════════════════════════════
+===============================
    GeoPhotoAI - Photo Data
-═══════════════════════════════
+===============================
 
-📍 Location: ${location.city}, ${location.country}
-🌐 Coordinates: ${location.coordinates}
-🌡️ Weather: ${weather.condition}, ${weather.temperature}
-💧 Humidity: ${weather.humidity}
-💨 Wind: ${weather.windSpeed} ${weather.windDirection}
-📅 Date: ${dateStr}
-⏰ Time: ${timeStr}
+Location: ${safeGet(location.city, 'Unknown')}, ${safeGet(location.country, 'Unknown')}
+Coordinates: ${safeGet(location.coordinates, 'N/A')}
+Weather: ${safeGet(weather.condition, 'Unknown')}, ${safeGet(weather.temperature, 'N/A')}
+Humidity: ${safeGet(weather.humidity, 'N/A')}
+Wind: ${safeGet(weather.windSpeed, 'N/A')} ${safeGet(weather.windDirection, '')}
+Date: ${dateStr}
+Time: ${timeStr}
 
-═══════════════════════════════
+===============================
    Camera Settings
-═══════════════════════════════
+===============================
 
-🎞️ Film: ${settings.filmName}
-📐 Format: ${settings.format}
-📷 Aperture: ${settings.aperture}
-⏱️ Shutter: ${settings.shutter}
-🔆 ISO: ${settings.iso}
-🎨 Filter: ${settings.filter}
-✨ Grain: ${settings.grain}
-🔲 Vignette: ${settings.vignette}
+Film: ${safeGet(settings.filmName, 'Unknown')}
+Format: ${safeGet(settings.format, 'Unknown')}
+Aperture: ${safeGet(settings.aperture, 'N/A')}
+Shutter: ${safeGet(settings.shutter, 'N/A')}
+ISO: ${safeGet(settings.iso, 'N/A')}
+Filter: ${safeGet(settings.filter, 'None')}
+Grain: ${safeGet(settings.grain, 'None')}
+Vignette: ${safeGet(settings.vignette, 'None')}
 
-═══════════════════════════════
+===============================
 
 Generated with GeoPhotoAI
-${window.location.href}
+${typeof window !== 'undefined' ? window.location.href : 'https://geophotoai.com'}
         `.trim();
+    },
+
+    /**
+     * Safely get a value with fallback
+     * @param {*} value - The value to check
+     * @param {string} fallback - Fallback value if undefined/null
+     * @returns {string}
+     */
+    safeValue(value, fallback = 'N/A') {
+        if (value === undefined || value === null || value === '') {
+            return fallback;
+        }
+        return String(value);
     },
 
     /**
@@ -118,20 +132,28 @@ ${window.location.href}
 
         this.init();
 
+        // Validate photoData structure before using
+        if (!photoData || !photoData.location || !photoData.weather || !photoData.settings) {
+            throw new Error('Invalid photo data. Please capture a photo first.');
+        }
+
         const formattedData = this.formatPhotoData(photoData);
 
-        // Prepare template parameters
+        // Prepare template parameters with safe fallbacks for all values
         const templateParams = {
-            to_email: toEmail,
-            to_name: toEmail.split('@')[0],
-            message: message || 'Check out this photo I created with GeoPhotoAI!',
-            image_url: imageUrl,
-            photo_data: formattedData,
-            location: `${photoData.location.city}, ${photoData.location.country}`,
-            weather: `${photoData.weather.condition}, ${photoData.weather.temperature}`,
-            film: photoData.settings.filmName,
-            date: new Date(photoData.timestamp).toLocaleDateString()
+            to_email: this.safeValue(toEmail, ''),
+            to_name: this.safeValue(toEmail ? toEmail.split('@')[0] : '', 'Friend'),
+            message: this.safeValue(message, 'Check out this photo I created with GeoPhotoAI!'),
+            image_url: this.safeValue(imageUrl, ''),
+            photo_data: this.safeValue(formattedData, 'Photo data not available'),
+            location: `${this.safeValue(photoData.location.city, 'Unknown City')}, ${this.safeValue(photoData.location.country, 'Unknown Country')}`,
+            weather: `${this.safeValue(photoData.weather.condition, 'Unknown')}, ${this.safeValue(photoData.weather.temperature, 'N/A')}`,
+            film: this.safeValue(photoData.settings.filmName, 'Unknown Film'),
+            date: this.safeValue(new Date(photoData.timestamp || Date.now()).toLocaleDateString(), new Date().toLocaleDateString())
         };
+
+        // Log template params for debugging
+        console.log('Email template params:', templateParams);
 
         try {
             const response = await emailjs.send(
@@ -144,6 +166,7 @@ ${window.location.href}
             return response;
         } catch (error) {
             console.error('Email send error:', error);
+            console.error('Template params that failed:', templateParams);
             throw new Error('Failed to send email. Please check your EmailJS configuration.');
         }
     },

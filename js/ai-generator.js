@@ -126,10 +126,10 @@ const AIGenerator = {
         // Get format description
         const formatDesc = this.formats[format]?.description || '';
 
-        // Build location/weather context
+        // Build location/weather context - emphasize landscape photography
         const locationContext = location?.city ?
-            `photograph taken in ${location.city}, ${location.country}` :
-            'outdoor photograph';
+            `scenic landscape photograph of ${location.city}, ${location.country}` :
+            'scenic outdoor landscape photograph';
 
         const weatherContext = weather?.condition ?
             `${weather.isDay ? 'daytime' : 'nighttime'}, ${weather.condition.toLowerCase()} weather` :
@@ -143,18 +143,22 @@ const AIGenerator = {
         const grainEffect = this.grainLevels[grain] || '';
         const vignetteEffect = this.vignetteLevels[vignette] || '';
 
+        // Landscape and scene constraints - NO portraits, people only in background
+        const sceneConstraints = 'landscape photography, cityscape or nature scene, wide angle view, no portraits, no close-up of people, people only as small figures in the distance if any, focus on architecture and environment';
+
         // Combine all parts
         const promptParts = [
-            `Beautiful ${formatDesc} photograph`,
+            `Beautiful ${formatDesc} landscape photograph`,
             locationContext,
             weatherContext,
+            sceneConstraints,
             `shot on ${filmName}`,
             filmStyle,
             technicalContext,
             filterEffect,
             grainEffect,
             vignetteEffect,
-            'professional photography, high quality, detailed, analog film aesthetic'
+            'professional landscape photography, high quality, detailed, analog film aesthetic'
         ].filter(part => part.length > 0);
 
         return promptParts.join(', ');
