@@ -67,6 +67,10 @@
                     <p class="location-country" id="location-country"></p>
                     <p class="location-coords" id="location-coords"></p>
                 </div>
+                <div class="location-time">
+                    <span class="time-display" id="current-time">--:--</span>
+                    <span class="date-display" id="current-date">--/--/----</span>
+                </div>
             </div>
 
             <div class="weather-card">
@@ -364,11 +368,19 @@
                 </button>
                 <button id="btn-download" class="btn-primary" style="display: none;">
                     <span class="btn-icon">&#8595;</span>
-                    Download
+                    Image
+                </button>
+                <button id="btn-download-info" class="btn-secondary" style="display: none;">
+                    <span class="btn-icon">&#128196;</span>
+                    Info
+                </button>
+                <button id="btn-download-prompt" class="btn-secondary" style="display: none;">
+                    <span class="btn-icon">&#128221;</span>
+                    Prompt
                 </button>
                 <button id="btn-new-photo" class="btn-secondary" style="display: none;">
                     <span class="btn-icon">&#9673;</span>
-                    New Photo
+                    New
                 </button>
             </div>
         </section>

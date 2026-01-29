@@ -27,8 +27,10 @@ const App = {
         moonPhase: null,
         timeOfDay: null,
         generatedImageUrl: null,
+        generatedPrompt: null,
         aiService: 'pollinations',
-        timestamp: null
+        timestamp: null,
+        captureTime: null
     },
 
     // DOM Elements cache
@@ -64,6 +66,8 @@ const App = {
             capture: document.getElementById('btn-capture'),
             regenerate: document.getElementById('btn-regenerate'),
             download: document.getElementById('btn-download'),
+            downloadInfo: document.getElementById('btn-download-info'),
+            downloadPrompt: document.getElementById('btn-download-prompt'),
             newPhoto: document.getElementById('btn-new-photo'),
             closeError: document.getElementById('btn-close-error')
         };
@@ -74,6 +78,10 @@ const App = {
             country: document.getElementById('location-country'),
             coords: document.getElementById('location-coords')
         };
+
+        // Time elements
+        this.elements.currentTime = document.getElementById('current-time');
+        this.elements.currentDate = document.getElementById('current-date');
 
         // Weather elements
         this.elements.weather = {
@@ -136,6 +144,8 @@ const App = {
         this.elements.buttons.capture.addEventListener('click', () => this.capturePhoto());
         this.elements.buttons.regenerate.addEventListener('click', () => this.regeneratePhoto());
         this.elements.buttons.download.addEventListener('click', () => this.downloadPhoto());
+        this.elements.buttons.downloadInfo.addEventListener('click', () => this.downloadInfo());
+        this.elements.buttons.downloadPrompt.addEventListener('click', () => this.downloadPrompt());
         this.elements.buttons.newPhoto.addEventListener('click', () => this.resetApp());
         this.elements.buttons.closeError.addEventListener('click', () => this.hideError());
 
@@ -220,6 +230,50 @@ const App = {
 
         // Scroll to top
         window.scrollTo(0, 0);
+    },
+
+    /**
+     * Format time for display
+     * @param {Date} date
+     * @returns {string}
+     */
+    formatTime(date) {
+        return date.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        });
+    },
+
+    /**
+     * Format date for display
+     * @param {Date} date
+     * @returns {string}
+     */
+    formatDate(date) {
+        return date.toLocaleDateString('en-US', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+    },
+
+    /**
+     * Format full datetime
+     * @param {Date} date
+     * @returns {string}
+     */
+    formatDateTime(date) {
+        return date.toLocaleString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
     },
 
     /**
@@ -376,8 +430,12 @@ const App = {
             this.elements.weather.humidity.textContent = `Humidity: ${this.state.weather.humidity}`;
             this.elements.weather.wind.textContent = `Wind: ${this.state.weather.windSpeed}`;
 
-            // Calculate moon phase
+            // Get current time
             const now = new Date();
+            this.elements.currentTime.textContent = this.formatTime(now);
+            this.elements.currentDate.textContent = this.formatDate(now);
+
+            // Calculate moon phase
             this.state.moonPhase = this.calculateMoonPhase(now);
             this.elements.moonIcon.textContent = this.state.moonPhase.emoji;
             this.elements.moonPhase.textContent = this.state.moonPhase.name;
@@ -469,11 +527,14 @@ const App = {
         this.elements.aiService.preview.style.display = 'none';
         this.elements.buttons.regenerate.style.display = 'none';
         this.elements.buttons.download.style.display = 'none';
+        this.elements.buttons.downloadInfo.style.display = 'none';
+        this.elements.buttons.downloadPrompt.style.display = 'none';
         this.elements.buttons.newPhoto.style.display = 'none';
         document.querySelector('.developing-animation').style.display = 'flex';
 
-        // Set timestamp
+        // Set timestamp and capture time
         this.state.timestamp = Date.now();
+        this.state.captureTime = new Date();
 
         // Build parameters
         const params = {
@@ -493,6 +554,9 @@ const App = {
             timeOfDay: this.state.timeOfDay
         };
 
+        // Save the generated prompt
+        this.state.generatedPrompt = AIGenerator.getPromptPreview(params);
+
         try {
             // Generate image
             const imageUrl = await AIGenerator.generate(params, (status) => {
@@ -507,11 +571,15 @@ const App = {
             this.elements.aiService.preview.style.display = 'flex';
             this.elements.buttons.regenerate.style.display = 'inline-flex';
             this.elements.buttons.download.style.display = 'inline-flex';
+            this.elements.buttons.downloadInfo.style.display = 'inline-flex';
+            this.elements.buttons.downloadPrompt.style.display = 'inline-flex';
             this.elements.buttons.newPhoto.style.display = 'inline-flex';
 
-            // Show photo info
+            // Show photo info with time
+            const captureTimeStr = this.formatTime(this.state.captureTime);
             this.elements.aiService.photoInfo.innerHTML = `
                 <span>${this.state.location.city}, ${this.state.location.country}</span>
+                <span>${captureTimeStr}</span>
                 <span>${this.state.settings.filmName}</span>
                 <span>${this.state.season.name} | ${this.state.timeOfDay.period}</span>
             `;
@@ -548,8 +616,9 @@ const App = {
 
             // Generate filename
             const timestamp = new Date().toISOString().slice(0, 10);
+            const timeStr = this.formatTime(this.state.captureTime).replace(':', '-');
             const city = this.state.location.city.replace(/\s+/g, '-').toLowerCase();
-            link.download = `geophotoai-${city}-${timestamp}.jpg`;
+            link.download = `geophotoai-${city}-${timestamp}-${timeStr}.jpg`;
 
             document.body.appendChild(link);
             link.click();
@@ -565,6 +634,121 @@ const App = {
     },
 
     /**
+     * Generate full info text
+     * @returns {string}
+     */
+    generateInfoText() {
+        const captureDateTime = this.formatDateTime(this.state.captureTime);
+
+        return `
+================================================================================
+                           GEOPHOTOAI - PHOTO DATA
+================================================================================
+
+CAPTURE INFORMATION
+-------------------
+Date & Time: ${captureDateTime}
+Location: ${this.state.location.city}, ${this.state.location.country}
+Coordinates: ${this.state.location.coordinates}
+Season: ${this.state.season.name}
+Time of Day: ${this.state.timeOfDay.period}
+Moon Phase: ${this.state.moonPhase.name}
+
+WEATHER CONDITIONS
+------------------
+Condition: ${this.state.weather.condition}
+Temperature: ${this.state.weather.temperature}
+Humidity: ${this.state.weather.humidity}
+Wind: ${this.state.weather.windSpeed}
+Day/Night: ${this.state.weather.isDay ? 'Day' : 'Night'}
+
+CAMERA SETTINGS
+---------------
+Film: ${this.state.settings.filmName}
+Format: ${this.state.settings.format}
+Aperture: ${this.state.settings.aperture}
+Shutter Speed: ${this.state.settings.shutter}
+ISO: ${this.state.settings.iso}
+Filter: ${this.state.settings.filter}
+Grain: ${this.state.settings.grain}
+Vignette: ${this.state.settings.vignette}
+
+USER CAPTION
+------------
+${this.state.caption || '(No caption provided)'}
+
+AI SERVICE
+----------
+Service: ${this.state.aiService}
+
+GENERATED PROMPT
+----------------
+${this.state.generatedPrompt}
+
+================================================================================
+                        Generated with GeoPhotoAI v${CONFIG.VERSION}
+================================================================================
+`.trim();
+    },
+
+    /**
+     * Download photo info as text file
+     */
+    downloadInfo() {
+        const infoText = this.generateInfoText();
+
+        const blob = new Blob([infoText], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+
+        const timestamp = new Date().toISOString().slice(0, 10);
+        const timeStr = this.formatTime(this.state.captureTime).replace(':', '-');
+        const city = this.state.location.city.replace(/\s+/g, '-').toLowerCase();
+        link.download = `geophotoai-${city}-${timestamp}-${timeStr}-info.txt`;
+
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    },
+
+    /**
+     * Download prompt as text file
+     */
+    downloadPrompt() {
+        if (!this.state.generatedPrompt) return;
+
+        const promptText = `GEOPHOTOAI - AI PROMPT
+Generated: ${this.formatDateTime(this.state.captureTime)}
+Location: ${this.state.location.city}, ${this.state.location.country}
+
+================================================================================
+PROMPT
+================================================================================
+
+${this.state.generatedPrompt}
+
+================================================================================
+`;
+
+        const blob = new Blob([promptText], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+
+        const timestamp = new Date().toISOString().slice(0, 10);
+        const timeStr = this.formatTime(this.state.captureTime).replace(':', '-');
+        const city = this.state.location.city.replace(/\s+/g, '-').toLowerCase();
+        link.download = `geophotoai-${city}-${timestamp}-${timeStr}-prompt.txt`;
+
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    },
+
+    /**
      * Reset app to start
      */
     resetApp() {
@@ -573,8 +757,9 @@ const App = {
         this.elements.captionCount.textContent = '0';
         this.state.caption = '';
 
-        // Reset generated image
+        // Reset generated data
         this.state.generatedImageUrl = null;
+        this.state.generatedPrompt = null;
 
         // Go to welcome
         this.goToStep('welcome');
