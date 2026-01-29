@@ -699,27 +699,44 @@ body {
    ===================================================== */
 
 .ai-service-selector {
-    text-align: center;
-    margin-bottom: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--card-bg);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+}
+
+.ai-service-selector .control-label {
+    display: block;
+    margin-bottom: var(--spacing-xs);
 }
 
 .service-buttons {
     display: flex;
-    justify-content: center;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-xs);
     margin-top: var(--spacing-xs);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: var(--spacing-xs);
+}
+
+.service-buttons::-webkit-scrollbar {
+    display: none;
 }
 
 .service-btn {
-    padding: var(--spacing-xs) var(--spacing-md);
+    padding: var(--spacing-xs) var(--spacing-sm);
     font-family: var(--font-body);
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     color: var(--text-muted);
-    background: var(--card-bg);
-    border: 2px solid var(--border-color);
-    border-radius: var(--radius-md);
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
     cursor: pointer;
     transition: all 0.2s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .service-btn.active {
@@ -727,11 +744,37 @@ body {
     border-color: var(--kodak-yellow);
 }
 
+.service-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-xs);
+}
+
 .service-note {
     font-size: 0.7rem;
     color: var(--text-muted);
-    margin-top: var(--spacing-xs);
     font-style: italic;
+    margin: 0;
+}
+
+.btn-puter-login {
+    padding: 4px 8px;
+    font-size: 0.65rem;
+    font-family: var(--font-body);
+    color: var(--kodak-yellow);
+    background: transparent;
+    border: 1px solid var(--kodak-yellow);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.btn-puter-login:hover {
+    background: var(--kodak-yellow);
+    color: var(--bg-dark);
 }
 
 .service-note.highlight {

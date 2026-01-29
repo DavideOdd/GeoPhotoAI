@@ -120,6 +120,7 @@ const App = {
         this.elements.aiService = {
             buttons: document.querySelectorAll('.service-btn'),
             note: document.getElementById('service-note'),
+            puterLoginBtn: document.getElementById('btn-puter-login'),
             status: document.getElementById('developing-status'),
             photoPaper: document.getElementById('photo-paper'),
             preview: document.getElementById('generated-preview'),
@@ -197,6 +198,11 @@ const App = {
         this.elements.aiService.buttons.forEach(btn => {
             btn.addEventListener('click', () => this.selectAIService(btn));
         });
+
+        // Puter login button
+        if (this.elements.aiService.puterLoginBtn) {
+            this.elements.aiService.puterLoginBtn.addEventListener('click', () => this.loginPuter());
+        }
     },
 
     /**
@@ -523,6 +529,9 @@ const App = {
         this.elements.aiService.buttons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         this.state.aiService = btn.dataset.service;
+
+        console.log('AI Service selected:', this.state.aiService);
+
         AIGenerator.setService(this.state.aiService);
 
         // Update service note
@@ -535,20 +544,62 @@ const App = {
      */
     updateServiceNote(service) {
         const noteEl = this.elements.aiService.note;
+        const loginBtn = this.elements.aiService.puterLoginBtn;
         if (!noteEl) return;
 
         const hasGoogleKey = window.CONFIG?.GOOGLE_API_KEY && window.CONFIG.GOOGLE_API_KEY.length > 0;
-        const puterNote = hasGoogleKey ? 'Using Google API' : 'Puter login may be required';
+        const isNanoBanana = service.startsWith('nano-banana');
 
         const notes = {
-            'nano-banana-fast': `Gemini 2.5 Flash - Fast generation${hasGoogleKey ? '' : ' - ' + puterNote}`,
-            'nano-banana-pro': `Gemini 2.0 Flash Exp - Higher quality${hasGoogleKey ? '' : ' - ' + puterNote}`,
-            'pollinations': 'Free, no login required',
-            'dezgo': 'Free, max 512px resolution'
+            'nano-banana-fast': 'Gemini 2.5 Flash - Fast',
+            'nano-banana-pro': 'Gemini 2.0 Flash - Quality',
+            'pollinations': 'Free, no login',
+            'dezgo': 'Free, max 512px'
         };
 
         noteEl.textContent = notes[service] || '';
-        noteEl.classList.toggle('highlight', service.startsWith('nano-banana'));
+        noteEl.classList.toggle('highlight', isNanoBanana);
+
+        // Show/hide Puter login button
+        if (loginBtn) {
+            const showLogin = isNanoBanana && !hasGoogleKey;
+            loginBtn.style.display = showLogin ? 'inline-block' : 'none';
+        }
+    },
+
+    /**
+     * Login to Puter for Nano Banana access
+     */
+    async loginPuter() {
+        if (typeof puter === 'undefined') {
+            this.showError('Puter.js not loaded. Please refresh the page.');
+            return;
+        }
+
+        try {
+            this.showLoading('Connecting to Puter...');
+
+            // Check if already authenticated
+            const isAuthenticated = puter.auth?.isSignedIn?.() || false;
+
+            if (!isAuthenticated) {
+                // Trigger Puter sign-in
+                await puter.auth.signIn();
+            }
+
+            this.hideLoading();
+
+            // Update button text to show logged in
+            if (this.elements.aiService.puterLoginBtn) {
+                this.elements.aiService.puterLoginBtn.textContent = 'Logged In';
+                this.elements.aiService.puterLoginBtn.disabled = true;
+            }
+
+        } catch (error) {
+            this.hideLoading();
+            console.error('Puter login error:', error);
+            this.showError('Failed to login to Puter: ' + error.message);
+        }
     },
 
     /**
@@ -590,6 +641,8 @@ const App = {
 
         // Save the generated prompt
         this.state.generatedPrompt = AIGenerator.getPromptPreview(params);
+
+        console.log('Generating with service:', this.state.aiService, 'AIGenerator.currentService:', AIGenerator.currentService);
 
         try {
             // Generate image
