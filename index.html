@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a1a1a">
+    <meta name="description" content="GeoPhotoAI - Generate AI photos based on your location and weather">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <title>GeoPhotoAI</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- EmailJS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Grain Overlay -->
+        <div class="grain-overlay"></div>
+
+        <!-- ==================== STEP 1: WELCOME ==================== -->
+        <section id="step-welcome" class="step active">
+            <div class="welcome-content">
+                <div class="logo-container">
+                    <div class="logo">
+                        <span class="logo-geo">Geo</span><span class="logo-photo">Photo</span><span class="logo-ai">AI</span>
+                    </div>
+                    <div class="logo-tagline">Capture moments with AI</div>
+                </div>
+
+                <div class="vintage-camera">
+                    <div class="camera-body">
+                        <div class="camera-lens"></div>
+                        <div class="camera-flash"></div>
+                        <div class="camera-viewfinder"></div>
+                    </div>
+                </div>
+
+                <button id="btn-start" class="btn-primary">
+                    <span class="btn-icon">&#9673;</span>
+                    Start Shooting
+                </button>
+
+                <p class="permission-note">Location access required</p>
+            </div>
+        </section>
+
+        <!-- ==================== STEP 2: LOCATION & WEATHER ==================== -->
+        <section id="step-location" class="step">
+            <div class="step-header">
+                <h2>Your Location</h2>
+            </div>
+
+            <div class="location-card">
+                <div class="location-icon">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                    </svg>
+                </div>
+                <div class="location-info">
+                    <p class="location-city" id="location-city">Detecting...</p>
+                    <p class="location-country" id="location-country"></p>
+                    <p class="location-coords" id="location-coords"></p>
+                </div>
+            </div>
+
+            <div class="weather-card">
+                <div class="weather-icon" id="weather-icon">
+                    <span class="weather-emoji">&#9728;</span>
+                </div>
+                <div class="weather-info">
+                    <p class="weather-temp" id="weather-temp">--°C</p>
+                    <p class="weather-condition" id="weather-condition">Loading...</p>
+                    <div class="weather-details">
+                        <span id="weather-humidity">Humidity: --%</span>
+                        <span id="weather-wind">Wind: -- km/h</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="step-actions">
+                <button id="btn-to-settings" class="btn-primary" disabled>
+                    Continue
+                    <span class="btn-arrow">&#8594;</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- ==================== STEP 3: CAMERA SETTINGS ==================== -->
+        <section id="step-settings" class="step">
+            <div class="step-header">
+                <h2>Camera Settings</h2>
+            </div>
+
+            <!-- Tabs Navigation -->
+            <div class="settings-tabs">
+                <button class="tab-btn active" data-tab="film">Film</button>
+                <button class="tab-btn" data-tab="format">Format</button>
+                <button class="tab-btn" data-tab="exposure">Exposure</button>
+                <button class="tab-btn" data-tab="effects">Effects</button>
+            </div>
+
+            <!-- Tab: Film -->
+            <div class="tab-content active" id="tab-film">
+                <div class="film-grid">
+                    <div class="film-item" data-film="kodak-portra-400">
+                        <div class="film-preview portra"></div>
+                        <span class="film-name">Kodak Portra 400</span>
+                    </div>
+                    <div class="film-item" data-film="kodak-ektar-100">
+                        <div class="film-preview ektar"></div>
+                        <span class="film-name">Kodak Ektar 100</span>
+                    </div>
+                    <div class="film-item" data-film="kodak-trix-400">
+                        <div class="film-preview trix"></div>
+                        <span class="film-name">Kodak Tri-X 400</span>
+                    </div>
+                    <div class="film-item" data-film="kodak-gold-200">
+                        <div class="film-preview gold"></div>
+                        <span class="film-name">Kodak Gold 200</span>
+                    </div>
+                    <div class="film-item" data-film="fuji-velvia-50">
+                        <div class="film-preview velvia"></div>
+                        <span class="film-name">Fuji Velvia 50</span>
+                    </div>
+                    <div class="film-item" data-film="fuji-superia-400">
+                        <div class="film-preview superia"></div>
+                        <span class="film-name">Fuji Superia 400</span>
+                    </div>
+                    <div class="film-item" data-film="ilford-hp5">
+                        <div class="film-preview hp5"></div>
+                        <span class="film-name">Ilford HP5 Plus</span>
+                    </div>
+                    <div class="film-item" data-film="cinestill-800t">
+                        <div class="film-preview cinestill"></div>
+                        <span class="film-name">Cinestill 800T</span>
+                    </div>
+                    <div class="film-item" data-film="agfa-vista-200">
+                        <div class="film-preview vista"></div>
+                        <span class="film-name">Agfa Vista 200</span>
+                    </div>
+                    <div class="film-item" data-film="polaroid-600">
+                        <div class="film-preview polaroid"></div>
+                        <span class="film-name">Polaroid 600</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Format -->
+            <div class="tab-content" id="tab-format">
+                <div class="format-grid">
+                    <div class="format-item" data-format="35mm">
+                        <div class="format-preview ratio-3-2"></div>
+                        <span class="format-name">35mm</span>
+                        <span class="format-ratio">3:2</span>
+                    </div>
+                    <div class="format-item" data-format="6x6">
+                        <div class="format-preview ratio-1-1"></div>
+                        <span class="format-name">6x6 Medium</span>
+                        <span class="format-ratio">1:1</span>
+                    </div>
+                    <div class="format-item" data-format="6x7">
+                        <div class="format-preview ratio-7-6"></div>
+                        <span class="format-name">6x7 Medium</span>
+                        <span class="format-ratio">7:6</span>
+                    </div>
+                    <div class="format-item" data-format="4x5">
+                        <div class="format-preview ratio-5-4"></div>
+                        <span class="format-name">4x5 Large</span>
+                        <span class="format-ratio">5:4</span>
+                    </div>
+                    <div class="format-item" data-format="polaroid">
+                        <div class="format-preview ratio-polaroid"></div>
+                        <span class="format-name">Polaroid</span>
+                        <span class="format-ratio">1:1</span>
+                    </div>
+                    <div class="format-item" data-format="110">
+                        <div class="format-preview ratio-4-3"></div>
+                        <span class="format-name">110 Film</span>
+                        <span class="format-ratio">4:3</span>
+                    </div>
+                    <div class="format-item" data-format="half-frame">
+                        <div class="format-preview ratio-3-4"></div>
+                        <span class="format-name">Half Frame</span>
+                        <span class="format-ratio">3:4</span>
+                    </div>
+                    <div class="format-item" data-format="panoramic">
+                        <div class="format-preview ratio-pano"></div>
+                        <span class="format-name">Panoramic</span>
+                        <span class="format-ratio">65:24</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Exposure -->
+            <div class="tab-content" id="tab-exposure">
+                <div class="exposure-controls">
+                    <!-- ISO -->
+                    <div class="control-group">
+                        <label class="control-label">ISO</label>
+                        <div class="dial-container">
+                            <select id="select-iso" class="vintage-select">
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                                <option value="200" selected>200</option>
+                                <option value="400">400</option>
+                                <option value="800">800</option>
+                                <option value="1600">1600</option>
+                                <option value="3200">3200</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Aperture -->
+                    <div class="control-group">
+                        <label class="control-label">Aperture</label>
+                        <div class="dial-container">
+                            <select id="select-aperture" class="vintage-select">
+                                <option value="f/1.4">f/1.4</option>
+                                <option value="f/2">f/2</option>
+                                <option value="f/2.8" selected>f/2.8</option>
+                                <option value="f/4">f/4</option>
+                                <option value="f/5.6">f/5.6</option>
+                                <option value="f/8">f/8</option>
+                                <option value="f/11">f/11</option>
+                                <option value="f/16">f/16</option>
+                                <option value="f/22">f/22</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Shutter Speed -->
+                    <div class="control-group">
+                        <label class="control-label">Shutter Speed</label>
+                        <div class="dial-container">
+                            <select id="select-shutter" class="vintage-select">
+                                <option value="1/1000s">1/1000s</option>
+                                <option value="1/500s">1/500s</option>
+                                <option value="1/250s">1/250s</option>
+                                <option value="1/125s" selected>1/125s</option>
+                                <option value="1/60s">1/60s</option>
+                                <option value="1/30s">1/30s</option>
+                                <option value="1/15s">1/15s</option>
+                                <option value="1s">1s</option>
+                                <option value="2s">2s</option>
+                                <option value="Bulb">Bulb</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Effects -->
+            <div class="tab-content" id="tab-effects">
+                <div class="effects-controls">
+                    <!-- Color Filter -->
+                    <div class="control-group">
+                        <label class="control-label">Color Filter</label>
+                        <select id="select-filter" class="vintage-select">
+                            <option value="none">None</option>
+                            <option value="warm">Warm (85B)</option>
+                            <option value="cool">Cool (80A)</option>
+                            <option value="sepia">Sepia</option>
+                            <option value="green">Green</option>
+                            <option value="orange">Orange</option>
+                            <option value="red-bw">Red (B/W)</option>
+                            <option value="yellow-bw">Yellow (B/W)</option>
+                        </select>
+                    </div>
+
+                    <!-- Grain -->
+                    <div class="control-group">
+                        <label class="control-label">Film Grain</label>
+                        <select id="select-grain" class="vintage-select">
+                            <option value="none">None</option>
+                            <option value="fine" selected>Fine</option>
+                            <option value="medium">Medium</option>
+                            <option value="heavy">Heavy</option>
+                            <option value="extreme">Extreme</option>
+                        </select>
+                    </div>
+
+                    <!-- Vignette -->
+                    <div class="control-group">
+                        <label class="control-label">Vignette</label>
+                        <select id="select-vignette" class="vintage-select">
+                            <option value="none">None</option>
+                            <option value="light" selected>Light</option>
+                            <option value="medium">Medium</option>
+                            <option value="strong">Strong</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="step-actions">
+                <button id="btn-back-to-location" class="btn-secondary">
+                    <span class="btn-arrow">&#8592;</span>
+                    Back
+                </button>
+                <button id="btn-capture" class="btn-capture">
+                    <span class="capture-icon">&#9673;</span>
+                    Capture
+                </button>
+            </div>
+        </section>
+
+        <!-- ==================== STEP 4: AI GENERATION ==================== -->
+        <section id="step-generate" class="step">
+            <div class="step-header">
+                <h2>Developing Photo</h2>
+            </div>
+
+            <div class="ai-service-selector">
+                <label class="control-label">AI Service</label>
+                <div class="service-buttons">
+                    <button class="service-btn active" data-service="pollinations">Pollinations</button>
+                    <button class="service-btn" data-service="dezgo">Dezgo</button>
+                </div>
+            </div>
+
+            <div class="developing-animation">
+                <div class="darkroom">
+                    <div class="photo-paper" id="photo-paper">
+                        <div class="photo-developing"></div>
+                    </div>
+                    <div class="chemical-tray"></div>
+                </div>
+                <p class="developing-status" id="developing-status">Preparing chemicals...</p>
+            </div>
+
+            <div class="generated-preview" id="generated-preview" style="display: none;">
+                <img id="generated-image" src="" alt="Generated photo">
+            </div>
+
+            <div class="step-actions">
+                <button id="btn-regenerate" class="btn-secondary" style="display: none;">
+                    <span class="btn-icon">&#8635;</span>
+                    Regenerate
+                </button>
+                <button id="btn-to-email" class="btn-primary" style="display: none;">
+                    Send via Email
+                    <span class="btn-arrow">&#8594;</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- ==================== STEP 5: EMAIL ==================== -->
+        <section id="step-email" class="step">
+            <div class="step-header">
+                <h2>Share Your Photo</h2>
+            </div>
+
+            <div class="email-preview">
+                <img id="email-preview-image" src="" alt="Your photo">
+            </div>
+
+            <div class="email-form">
+                <div class="form-group">
+                    <label for="input-email">Recipient Email</label>
+                    <input type="email" id="input-email" class="vintage-input" placeholder="friend@email.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="input-message">Personal Message (optional)</label>
+                    <textarea id="input-message" class="vintage-input" placeholder="Check out this photo I made for you!" rows="3"></textarea>
+                </div>
+
+                <div class="form-group checkbox-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="checkbox-copy">
+                        <span class="checkmark"></span>
+                        Send a copy to myself
+                    </label>
+                    <input type="email" id="input-my-email" class="vintage-input" placeholder="your@email.com" style="display: none;">
+                </div>
+            </div>
+
+            <div class="photo-data-preview">
+                <h3>Photo Data</h3>
+                <div class="data-grid" id="photo-data-grid">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <div class="step-actions">
+                <button id="btn-back-to-generate" class="btn-secondary">
+                    <span class="btn-arrow">&#8592;</span>
+                    Back
+                </button>
+                <button id="btn-send-email" class="btn-primary">
+                    <span class="btn-icon">&#9993;</span>
+                    Send Photo
+                </button>
+            </div>
+        </section>
+
+        <!-- ==================== STEP 6: CONFIRMATION ==================== -->
+        <section id="step-confirm" class="step">
+            <div class="confirm-content">
+                <div class="success-icon">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                    </svg>
+                </div>
+
+                <h2>Photo Sent!</h2>
+                <p class="confirm-message">Your GeoPhotoAI capture has been delivered successfully.</p>
+
+                <div class="confirm-details" id="confirm-details">
+                    <!-- Populated by JS -->
+                </div>
+
+                <button id="btn-new-photo" class="btn-primary">
+                    <span class="btn-icon">&#9673;</span>
+                    Take Another
+                </button>
+            </div>
+        </section>
+
+        <!-- ==================== ERROR MODAL ==================== -->
+        <div id="error-modal" class="modal">
+            <div class="modal-content">
+                <h3>Oops!</h3>
+                <p id="error-message"></p>
+                <button id="btn-close-error" class="btn-primary">OK</button>
+            </div>
+        </div>
+
+        <!-- ==================== LOADING OVERLAY ==================== -->
+        <div id="loading-overlay" class="loading-overlay">
+            <div class="loading-spinner"></div>
+            <p id="loading-message">Loading...</p>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="config.js"></script>
+    <script src="js/geolocation.js"></script>
+    <script src="js/weather.js"></script>
+    <script src="js/ai-generator.js"></script>
+    <script src="js/email.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
