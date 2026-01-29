@@ -7,8 +7,8 @@ const CONFIG = {
     // App Settings
     // ============================================
 
-    // Default AI service ('pollinations', 'nano-banana', or 'dezgo')
-    DEFAULT_AI_SERVICE: 'pollinations',
+    // Default AI service ('nano-banana-fast', 'nano-banana-pro', 'pollinations', or 'dezgo')
+    DEFAULT_AI_SERVICE: 'nano-banana-fast',
 
     // Image generation timeout in milliseconds
     GENERATION_TIMEOUT: 120000,
@@ -27,14 +27,10 @@ const CONFIG = {
     // Get your key from: https://aistudio.google.com/apikey
     GOOGLE_API_KEY: '',
 
-    // Nano Banana model to use
-    // Options: 'gemini-2.5-flash-image-preview' (faster) or 'gemini-3-pro-image-preview' (higher quality)
-    NANO_BANANA_MODEL: 'gemini-2.5-flash-image-preview',
-
-    // Puter.js model mapping (used when no Google API key)
-    PUTER_MODELS: {
-        'gemini-2.5-flash-image-preview': 'nano-banana',
-        'gemini-3-pro-image-preview': 'nano-banana-pro'
+    // Model mapping for each service
+    NANO_BANANA_MODELS: {
+        'nano-banana-fast': 'gemini-2.5-flash-preview-image-generation',
+        'nano-banana-pro': 'gemini-2.0-flash-exp-image-generation'
     }
 };
 

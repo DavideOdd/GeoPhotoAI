@@ -28,7 +28,7 @@ const App = {
         timeOfDay: null,
         generatedImageUrl: null,
         generatedPrompt: null,
-        aiService: 'pollinations',
+        aiService: 'nano-banana-fast',
         timestamp: null,
         captureTime: null
     },
@@ -210,6 +210,14 @@ const App = {
         // Select default format
         const defaultFormat = document.querySelector('[data-format="35mm"]');
         if (defaultFormat) defaultFormat.classList.add('selected');
+
+        // Initialize AI service from config
+        const defaultService = window.CONFIG?.DEFAULT_AI_SERVICE || 'nano-banana-fast';
+        this.state.aiService = defaultService;
+        AIGenerator.setService(defaultService);
+
+        // Update service note
+        this.updateServiceNote(defaultService);
     },
 
     /**
@@ -529,16 +537,18 @@ const App = {
         const noteEl = this.elements.aiService.note;
         if (!noteEl) return;
 
+        const hasGoogleKey = window.CONFIG?.GOOGLE_API_KEY && window.CONFIG.GOOGLE_API_KEY.length > 0;
+        const puterNote = hasGoogleKey ? 'Using Google API' : 'Puter login may be required';
+
         const notes = {
+            'nano-banana-fast': `Gemini 2.5 Flash - Fast generation${hasGoogleKey ? '' : ' - ' + puterNote}`,
+            'nano-banana-pro': `Gemini 2.0 Flash Exp - Higher quality${hasGoogleKey ? '' : ' - ' + puterNote}`,
             'pollinations': 'Free, no login required',
-            'nano-banana': window.CONFIG?.GOOGLE_API_KEY ?
-                'Using Google API' :
-                'Puter login may be required',
             'dezgo': 'Free, max 512px resolution'
         };
 
         noteEl.textContent = notes[service] || '';
-        noteEl.classList.toggle('highlight', service === 'nano-banana');
+        noteEl.classList.toggle('highlight', service.startsWith('nano-banana'));
     },
 
     /**

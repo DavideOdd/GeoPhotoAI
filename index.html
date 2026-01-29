@@ -110,6 +110,18 @@
                 <h2>Camera Settings</h2>
             </div>
 
+            <!-- AI Service Selector -->
+            <div class="ai-service-selector">
+                <label class="control-label">AI Engine</label>
+                <div class="service-buttons">
+                    <button class="service-btn active" data-service="nano-banana-fast">Nano Banana</button>
+                    <button class="service-btn" data-service="nano-banana-pro">Nano Banana Pro</button>
+                    <button class="service-btn" data-service="pollinations">Pollinations</button>
+                    <button class="service-btn" data-service="dezgo">Dezgo</button>
+                </div>
+                <p class="service-note" id="service-note">Gemini 2.5 Flash - Fast generation</p>
+            </div>
+
             <!-- Caption Input -->
             <div class="caption-container">
                 <label class="control-label" for="input-caption">Your Caption (optional)</label>
@@ -336,16 +348,6 @@
         <section id="step-generate" class="step">
             <div class="step-header">
                 <h2>Developing Photo</h2>
-            </div>
-
-            <div class="ai-service-selector">
-                <label class="control-label">AI Service</label>
-                <div class="service-buttons">
-                    <button class="service-btn active" data-service="pollinations">Pollinations</button>
-                    <button class="service-btn" data-service="nano-banana">Nano Banana</button>
-                    <button class="service-btn" data-service="dezgo">Dezgo</button>
-                </div>
-                <p class="service-note" id="service-note"></p>
             </div>
 
             <div class="developing-animation">

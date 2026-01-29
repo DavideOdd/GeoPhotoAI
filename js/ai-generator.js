@@ -8,7 +8,7 @@
 
 const AIGenerator = {
     // Current service
-    currentService: 'pollinations',
+    currentService: 'nano-banana-fast',
 
     // Film stock characteristics for prompt enhancement
     filmStocks: {
@@ -178,7 +178,7 @@ const AIGenerator = {
 
     /**
      * Set the current AI service
-     * @param {string} service - 'pollinations', 'nano-banana', or 'dezgo'
+     * @param {string} service - 'nano-banana-fast', 'nano-banana-pro', 'pollinations', or 'dezgo'
      */
     setService(service) {
         this.currentService = service;
@@ -384,17 +384,21 @@ const AIGenerator = {
      * Generate image using Nano Banana via Puter.js
      * @param {string} prompt
      * @param {object} dimensions
+     * @param {string} service - 'nano-banana-fast' or 'nano-banana-pro'
      * @returns {Promise<string>} Image URL
      */
-    async generateWithNanoBananaPuter(prompt, dimensions) {
+    async generateWithNanoBananaPuter(prompt, dimensions, service) {
         // Check if Puter.js is available
         if (typeof puter === 'undefined') {
             throw new Error('Puter.js not loaded. Please refresh the page.');
         }
 
         try {
-            // Get the model from config
-            const geminiModel = window.CONFIG?.NANO_BANANA_MODEL || 'gemini-2.5-flash-image-preview';
+            // Get the model from config based on service
+            const models = window.CONFIG?.NANO_BANANA_MODELS || {};
+            const geminiModel = models[service] || 'gemini-2.5-flash-preview-image-generation';
+
+            console.log('Using Puter model:', geminiModel);
 
             // Generate image using Puter.js
             const imageElement = await puter.ai.txt2img(prompt, {
@@ -428,17 +432,22 @@ const AIGenerator = {
      * Generate image using Nano Banana via Google API
      * @param {string} prompt
      * @param {object} dimensions
+     * @param {string} service - 'nano-banana-fast' or 'nano-banana-pro'
      * @returns {Promise<string>} Image URL (base64)
      */
-    async generateWithNanoBananaGoogle(prompt, dimensions) {
+    async generateWithNanoBananaGoogle(prompt, dimensions, service) {
         const apiKey = window.CONFIG?.GOOGLE_API_KEY;
 
         if (!apiKey) {
             throw new Error('Google API key not configured');
         }
 
-        const model = window.CONFIG?.NANO_BANANA_MODEL || 'gemini-2.5-flash-image-preview';
+        // Get the model from config based on service
+        const models = window.CONFIG?.NANO_BANANA_MODELS || {};
+        const model = models[service] || 'gemini-2.5-flash-preview-image-generation';
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+
+        console.log('Using Google API model:', model);
 
         try {
             const response = await fetch(url, {
@@ -506,16 +515,17 @@ const AIGenerator = {
             if (this.currentService === 'pollinations') {
                 onProgress('Connecting to Pollinations AI...');
                 imageUrl = await this.generateWithPollinations(prompt, dimensions);
-            } else if (this.currentService === 'nano-banana') {
+            } else if (this.currentService === 'nano-banana-fast' || this.currentService === 'nano-banana-pro') {
                 // Check if Google API key is configured
                 const hasGoogleKey = window.CONFIG?.GOOGLE_API_KEY && window.CONFIG.GOOGLE_API_KEY.length > 0;
+                const modelName = this.currentService === 'nano-banana-pro' ? 'Nano Banana Pro' : 'Nano Banana Fast';
 
                 if (hasGoogleKey) {
-                    onProgress('Connecting to Google Gemini API...');
-                    imageUrl = await this.generateWithNanoBananaGoogle(prompt, dimensions);
+                    onProgress(`Connecting to ${modelName} (Google API)...`);
+                    imageUrl = await this.generateWithNanoBananaGoogle(prompt, dimensions, this.currentService);
                 } else {
-                    onProgress('Connecting to Nano Banana via Puter...');
-                    imageUrl = await this.generateWithNanoBananaPuter(prompt, dimensions);
+                    onProgress(`Connecting to ${modelName} via Puter...`);
+                    imageUrl = await this.generateWithNanoBananaPuter(prompt, dimensions, this.currentService);
                 }
             } else if (this.currentService === 'dezgo') {
                 onProgress('Connecting to Dezgo AI...');
