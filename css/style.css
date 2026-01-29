@@ -727,6 +727,17 @@ body {
     border-color: var(--kodak-yellow);
 }
 
+.service-note {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: var(--spacing-xs);
+    font-style: italic;
+}
+
+.service-note.highlight {
+    color: var(--kodak-orange);
+}
+
 /* Developing Animation */
 .developing-animation {
     flex: 1;

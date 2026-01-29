@@ -1,6 +1,9 @@
 /**
  * GeoPhotoAI - AI Image Generator Module
- * Supports Pollinations.ai and Dezgo (free, no API key)
+ * Supports:
+ * - Pollinations.ai (free, no API key)
+ * - Nano Banana / Gemini (via Puter.js or Google API)
+ * - Dezgo (free, limited)
  */
 
 const AIGenerator = {
@@ -175,7 +178,7 @@ const AIGenerator = {
 
     /**
      * Set the current AI service
-     * @param {string} service - 'pollinations' or 'dezgo'
+     * @param {string} service - 'pollinations', 'nano-banana', or 'dezgo'
      */
     setService(service) {
         this.currentService = service;
@@ -378,6 +381,109 @@ const AIGenerator = {
     },
 
     /**
+     * Generate image using Nano Banana via Puter.js
+     * @param {string} prompt
+     * @param {object} dimensions
+     * @returns {Promise<string>} Image URL
+     */
+    async generateWithNanoBananaPuter(prompt, dimensions) {
+        // Check if Puter.js is available
+        if (typeof puter === 'undefined') {
+            throw new Error('Puter.js not loaded. Please refresh the page.');
+        }
+
+        try {
+            // Get the model from config
+            const geminiModel = window.CONFIG?.NANO_BANANA_MODEL || 'gemini-2.5-flash-image-preview';
+
+            // Generate image using Puter.js
+            const imageElement = await puter.ai.txt2img(prompt, {
+                model: geminiModel
+            });
+
+            // Puter returns an HTMLImageElement, extract the src
+            if (imageElement && imageElement.src) {
+                return imageElement.src;
+            }
+
+            // If it returns a URL string directly
+            if (typeof imageElement === 'string') {
+                return imageElement;
+            }
+
+            throw new Error('Invalid response from Puter.js');
+        } catch (error) {
+            console.error('Puter.js Nano Banana error:', error);
+
+            // Check for specific error types
+            if (error.message?.includes('auth') || error.message?.includes('login')) {
+                throw new Error('Please sign in to Puter to use Nano Banana. A popup should appear.');
+            }
+
+            throw new Error(`Nano Banana (Puter) failed: ${error.message}`);
+        }
+    },
+
+    /**
+     * Generate image using Nano Banana via Google API
+     * @param {string} prompt
+     * @param {object} dimensions
+     * @returns {Promise<string>} Image URL (base64)
+     */
+    async generateWithNanoBananaGoogle(prompt, dimensions) {
+        const apiKey = window.CONFIG?.GOOGLE_API_KEY;
+
+        if (!apiKey) {
+            throw new Error('Google API key not configured');
+        }
+
+        const model = window.CONFIG?.NANO_BANANA_MODEL || 'gemini-2.5-flash-image-preview';
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'x-goog-api-key': apiKey,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{ text: prompt }]
+                    }],
+                    generationConfig: {
+                        responseModalities: ['IMAGE'],
+                        imageSizeHint: {
+                            width: dimensions.width,
+                            height: dimensions.height
+                        }
+                    }
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error?.message || `API error: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            // Extract image from response
+            const imagePart = data.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+
+            if (imagePart?.inlineData?.data) {
+                const mimeType = imagePart.inlineData.mimeType || 'image/png';
+                return `data:${mimeType};base64,${imagePart.inlineData.data}`;
+            }
+
+            throw new Error('No image in API response');
+        } catch (error) {
+            console.error('Google API Nano Banana error:', error);
+            throw new Error(`Nano Banana (Google) failed: ${error.message}`);
+        }
+    },
+
+    /**
      * Main generate function
      * @param {object} params - All photo parameters
      * @param {function} onProgress - Progress callback
@@ -400,6 +506,17 @@ const AIGenerator = {
             if (this.currentService === 'pollinations') {
                 onProgress('Connecting to Pollinations AI...');
                 imageUrl = await this.generateWithPollinations(prompt, dimensions);
+            } else if (this.currentService === 'nano-banana') {
+                // Check if Google API key is configured
+                const hasGoogleKey = window.CONFIG?.GOOGLE_API_KEY && window.CONFIG.GOOGLE_API_KEY.length > 0;
+
+                if (hasGoogleKey) {
+                    onProgress('Connecting to Google Gemini API...');
+                    imageUrl = await this.generateWithNanoBananaGoogle(prompt, dimensions);
+                } else {
+                    onProgress('Connecting to Nano Banana via Puter...');
+                    imageUrl = await this.generateWithNanoBananaPuter(prompt, dimensions);
+                }
             } else if (this.currentService === 'dezgo') {
                 onProgress('Connecting to Dezgo AI...');
                 imageUrl = await this.generateWithDezgo(prompt, dimensions);

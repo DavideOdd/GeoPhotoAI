@@ -119,6 +119,7 @@ const App = {
         // AI service elements
         this.elements.aiService = {
             buttons: document.querySelectorAll('.service-btn'),
+            note: document.getElementById('service-note'),
             status: document.getElementById('developing-status'),
             photoPaper: document.getElementById('photo-paper'),
             preview: document.getElementById('generated-preview'),
@@ -515,6 +516,29 @@ const App = {
         btn.classList.add('active');
         this.state.aiService = btn.dataset.service;
         AIGenerator.setService(this.state.aiService);
+
+        // Update service note
+        this.updateServiceNote(this.state.aiService);
+    },
+
+    /**
+     * Update service note based on selected service
+     * @param {string} service
+     */
+    updateServiceNote(service) {
+        const noteEl = this.elements.aiService.note;
+        if (!noteEl) return;
+
+        const notes = {
+            'pollinations': 'Free, no login required',
+            'nano-banana': window.CONFIG?.GOOGLE_API_KEY ?
+                'Using Google API' :
+                'Puter login may be required',
+            'dezgo': 'Free, max 512px resolution'
+        };
+
+        noteEl.textContent = notes[service] || '';
+        noteEl.classList.toggle('highlight', service === 'nano-banana');
     },
 
     /**

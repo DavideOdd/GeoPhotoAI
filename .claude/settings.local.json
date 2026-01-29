@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(del \"d:\\\\Unity\\\\3DTemplate\\\\3DTemplate-Export\\\\GeoPhotoAI\\\\js\\\\email.js\")"
+      "Bash(del \"d:\\\\Unity\\\\3DTemplate\\\\3DTemplate-Export\\\\GeoPhotoAI\\\\js\\\\email.js\")",
+      "WebFetch(domain:developer.puter.com)"
     ]
   }
 }
