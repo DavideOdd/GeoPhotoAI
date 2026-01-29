@@ -92,12 +92,121 @@ const AIGenerator = {
         'strong': 'heavy vignette, dark corners, spotlight effect'
     },
 
+    // Country-specific landmarks and characteristics
+    countryCharacteristics: {
+        'Italy': {
+            landmarks: 'historic architecture, Renaissance buildings, ancient ruins, cobblestone streets, piazzas, fountains, Mediterranean style',
+            cities: {
+                'Rome': 'Colosseum area, Roman Forum ruins, baroque fountains, ancient temples, Spanish Steps, Tiber river, pine trees',
+                'Florence': 'Duomo cathedral, terracotta rooftops, Ponte Vecchio, Tuscan hills, Renaissance palaces, Arno river',
+                'Venice': 'canals, gondolas, St Mark Square, Byzantine architecture, bridges, lagoon, colorful buildings',
+                'Milan': 'modern architecture, Duomo cathedral, fashion district, trams, Navigli canals',
+                'Naples': 'Vesuvius volcano, bay view, narrow streets, laundry lines, historic center',
+                'Palermo': 'Arab-Norman architecture, street markets, baroque churches, palm trees, Mediterranean port, Monte Pellegrino'
+            }
+        },
+        'France': {
+            landmarks: 'Haussmann buildings, cafes, tree-lined boulevards, ornate ironwork, mansard roofs',
+            cities: {
+                'Paris': 'Eiffel Tower area, Seine river, Haussmann boulevards, Notre-Dame, Montmartre, zinc rooftops',
+                'Nice': 'Promenade des Anglais, Mediterranean coast, pastel buildings, palm trees',
+                'Lyon': 'Renaissance old town, two rivers, traboules passages'
+            }
+        },
+        'Japan': {
+            landmarks: 'temples, shrines, cherry blossoms, traditional architecture, modern neon, zen gardens',
+            cities: {
+                'Tokyo': 'neon signs, Shibuya crossing, skyscrapers, temples, cherry blossoms, narrow alleys',
+                'Kyoto': 'bamboo forest, golden temple, geisha district, traditional wooden houses, zen gardens',
+                'Osaka': 'Dotonbori neon, castle, street food stalls, waterways'
+            }
+        },
+        'United States': {
+            landmarks: 'diverse architecture, wide streets, urban skylines',
+            cities: {
+                'New York': 'Manhattan skyline, Brooklyn Bridge, yellow cabs, brownstones, Central Park, steam vents',
+                'Los Angeles': 'palm trees, Hollywood hills, beach boardwalk, Art Deco buildings',
+                'San Francisco': 'Golden Gate Bridge, cable cars, Victorian houses, steep hills, fog',
+                'Chicago': 'skyscrapers, Lake Michigan, elevated trains, river architecture'
+            }
+        },
+        'United Kingdom': {
+            landmarks: 'Georgian architecture, red phone boxes, Victorian buildings, pubs',
+            cities: {
+                'London': 'Big Ben, Tower Bridge, red buses, Thames river, Georgian townhouses, parks',
+                'Edinburgh': 'castle, Royal Mile, Gothic architecture, Arthur Seat, stone buildings'
+            }
+        },
+        'Spain': {
+            landmarks: 'Moorish architecture, plazas, terracotta roofs, whitewashed walls',
+            cities: {
+                'Barcelona': 'Gaudi architecture, Gothic Quarter, Ramblas, Mediterranean beach, modernist buildings',
+                'Madrid': 'grand plazas, royal palace, tree-lined paseos, historic center'
+            }
+        },
+        'Germany': {
+            landmarks: 'half-timbered houses, Gothic churches, beer gardens, modern architecture',
+            cities: {
+                'Berlin': 'Brandenburg Gate, modern architecture, historic buildings, graffiti art, riverside',
+                'Munich': 'Marienplatz, beer halls, Alps backdrop, baroque churches'
+            }
+        },
+        'Greece': {
+            landmarks: 'white buildings, blue domes, ancient ruins, olive trees, Mediterranean coast',
+            cities: {
+                'Athens': 'Acropolis, Parthenon, ancient agora, neoclassical buildings, Plaka neighborhood',
+                'Santorini': 'white houses, blue domed churches, caldera view, sunset cliffs'
+            }
+        },
+        'Netherlands': {
+            landmarks: 'canals, bicycles, narrow houses, windmills, tulip fields',
+            cities: {
+                'Amsterdam': 'canal houses, bridges, bicycles, houseboats, narrow buildings, Jordaan district'
+            }
+        },
+        'Portugal': {
+            landmarks: 'azulejo tiles, colorful buildings, trams, coastal cliffs',
+            cities: {
+                'Lisbon': 'yellow trams, Alfama district, azulejo tiles, hilltop views, Tagus river',
+                'Porto': 'Douro river, port wine cellars, colorful Ribeira, Dom Luis bridge'
+            }
+        }
+    },
+
     /**
      * Set the current AI service
      * @param {string} service - 'pollinations' or 'dezgo'
      */
     setService(service) {
         this.currentService = service;
+    },
+
+    /**
+     * Get location-specific characteristics for the prompt
+     * @param {object} location
+     * @returns {string}
+     */
+    getLocationContext(location) {
+        if (!location?.city || !location?.country) {
+            return 'scenic urban or natural landscape';
+        }
+
+        const country = location.country;
+        const city = location.city;
+
+        // Check if we have specific data for this country
+        const countryData = this.countryCharacteristics[country];
+        if (countryData) {
+            // Check for city-specific landmarks
+            if (countryData.cities && countryData.cities[city]) {
+                return `${city}, ${country}, featuring ${countryData.cities[city]}`;
+            }
+            // Use country-level characteristics
+            return `${city}, ${country}, featuring ${countryData.landmarks}`;
+        }
+
+        // Generic description for unknown locations
+        return `${city}, ${country}, typical local architecture and landmarks`;
     },
 
     /**
@@ -116,7 +225,11 @@ const AIGenerator = {
             shutter,
             filter,
             grain,
-            vignette
+            vignette,
+            caption,
+            season,
+            moonPhase,
+            timeOfDay
         } = params;
 
         // Get film style
@@ -126,14 +239,33 @@ const AIGenerator = {
         // Get format description
         const formatDesc = this.formats[format]?.description || '';
 
-        // Build location/weather context - emphasize landscape photography
-        const locationContext = location?.city ?
-            `scenic landscape photograph of ${location.city}, ${location.country}` :
-            'scenic outdoor landscape photograph';
+        // Build location context with specific landmarks
+        const locationContext = this.getLocationContext(location);
 
+        // Weather context
         const weatherContext = weather?.condition ?
-            `${weather.isDay ? 'daytime' : 'nighttime'}, ${weather.condition.toLowerCase()} weather` :
+            `${weather.condition.toLowerCase()} weather` :
             '';
+
+        // Season context
+        const seasonContext = season?.description || '';
+
+        // Time of day context
+        const timeContext = timeOfDay?.description || '';
+
+        // Moon context (for night scenes)
+        let moonContext = '';
+        if (timeOfDay?.period === 'night' || timeOfDay?.period === 'dusk') {
+            if (moonPhase) {
+                if (moonPhase.name === 'Full Moon') {
+                    moonContext = 'full moon illuminating the scene, moonlit atmosphere';
+                } else if (moonPhase.name === 'New Moon') {
+                    moonContext = 'dark night sky, starry sky visible';
+                } else {
+                    moonContext = `${moonPhase.name.toLowerCase()} in the sky`;
+                }
+            }
+        }
 
         // Build technical settings context
         const technicalContext = `shot at ${aperture}, ${shutter} exposure, ISO ${iso}`;
@@ -143,6 +275,9 @@ const AIGenerator = {
         const grainEffect = this.grainLevels[grain] || '';
         const vignetteEffect = this.vignetteLevels[vignette] || '';
 
+        // User caption (if provided, max 200 chars)
+        const userCaption = caption ? caption.substring(0, 200) : '';
+
         // Landscape and scene constraints - NO portraits, people only in background
         const sceneConstraints = 'landscape photography, cityscape or nature scene, wide angle view, no portraits, no close-up of people, people only as small figures in the distance if any, focus on architecture and environment';
 
@@ -150,7 +285,11 @@ const AIGenerator = {
         const promptParts = [
             `Beautiful ${formatDesc} landscape photograph`,
             locationContext,
+            userCaption, // User's custom description
+            seasonContext,
+            timeContext,
             weatherContext,
+            moonContext,
             sceneConstraints,
             `shot on ${filmName}`,
             filmStyle,
@@ -158,8 +297,8 @@ const AIGenerator = {
             filterEffect,
             grainEffect,
             vignetteEffect,
-            'professional landscape photography, high quality, detailed, analog film aesthetic'
-        ].filter(part => part.length > 0);
+            'professional landscape photography, high quality, detailed, analog film aesthetic, authentic location'
+        ].filter(part => part && part.length > 0);
 
         return promptParts.join(', ');
     },

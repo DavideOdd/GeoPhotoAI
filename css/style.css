@@ -422,9 +422,65 @@ body {
     color: var(--text-muted);
 }
 
+/* Moon Card */
+.moon-card {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--card-bg);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-md);
+    border: 1px solid var(--border-color);
+}
+
+.moon-icon {
+    font-size: 2rem;
+}
+
+.moon-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+#moon-phase {
+    font-size: 0.875rem;
+    color: var(--text-cream);
+}
+
+#season-info {
+    font-size: 0.75rem;
+    color: var(--kodak-orange);
+    font-family: var(--font-display);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
 /* =====================================================
    STEP 3: CAMERA SETTINGS
    ===================================================== */
+
+/* Caption Input */
+.caption-container {
+    margin-bottom: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--card-bg);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+}
+
+.caption-input {
+    min-height: 60px;
+    margin-top: var(--spacing-xs);
+}
+
+.caption-counter {
+    text-align: right;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: var(--spacing-xs);
+}
 
 .settings-tabs {
     display: flex;
@@ -724,11 +780,35 @@ body {
     padding: var(--spacing-md);
 }
 
+.generated-preview {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
 .generated-preview img {
     max-width: 100%;
-    max-height: 50vh;
+    max-height: 45vh;
     border: 8px solid #fff;
     box-shadow: 0 10px 30px var(--shadow-dark);
+}
+
+.photo-info {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--spacing-xs) var(--spacing-md);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.photo-info span {
+    background: var(--card-bg);
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+}
+
+.generation-actions {
+    flex-wrap: wrap;
 }
 
 /* =====================================================

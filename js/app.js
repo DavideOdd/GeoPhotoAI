@@ -22,6 +22,10 @@ const App = {
             grain: 'fine',
             vignette: 'light'
         },
+        caption: '',
+        season: null,
+        moonPhase: null,
+        timeOfDay: null,
         generatedImageUrl: null,
         aiService: 'pollinations',
         timestamp: null
@@ -49,9 +53,7 @@ const App = {
             welcome: document.getElementById('step-welcome'),
             location: document.getElementById('step-location'),
             settings: document.getElementById('step-settings'),
-            generate: document.getElementById('step-generate'),
-            email: document.getElementById('step-email'),
-            confirm: document.getElementById('step-confirm')
+            generate: document.getElementById('step-generate')
         };
 
         // Buttons
@@ -61,9 +63,7 @@ const App = {
             backToLocation: document.getElementById('btn-back-to-location'),
             capture: document.getElementById('btn-capture'),
             regenerate: document.getElementById('btn-regenerate'),
-            toEmail: document.getElementById('btn-to-email'),
-            backToGenerate: document.getElementById('btn-back-to-generate'),
-            sendEmail: document.getElementById('btn-send-email'),
+            download: document.getElementById('btn-download'),
             newPhoto: document.getElementById('btn-new-photo'),
             closeError: document.getElementById('btn-close-error')
         };
@@ -83,6 +83,16 @@ const App = {
             humidity: document.getElementById('weather-humidity'),
             wind: document.getElementById('weather-wind')
         };
+
+        // Moon and season elements
+        this.elements.moonCard = document.getElementById('moon-card');
+        this.elements.moonIcon = document.getElementById('moon-icon');
+        this.elements.moonPhase = document.getElementById('moon-phase');
+        this.elements.seasonInfo = document.getElementById('season-info');
+
+        // Caption elements
+        this.elements.captionInput = document.getElementById('input-caption');
+        this.elements.captionCount = document.getElementById('caption-count');
 
         // Settings elements
         this.elements.settings = {
@@ -104,22 +114,8 @@ const App = {
             status: document.getElementById('developing-status'),
             photoPaper: document.getElementById('photo-paper'),
             preview: document.getElementById('generated-preview'),
-            image: document.getElementById('generated-image')
-        };
-
-        // Email elements
-        this.elements.email = {
-            previewImage: document.getElementById('email-preview-image'),
-            inputEmail: document.getElementById('input-email'),
-            inputMessage: document.getElementById('input-message'),
-            checkboxCopy: document.getElementById('checkbox-copy'),
-            inputMyEmail: document.getElementById('input-my-email'),
-            photoDataGrid: document.getElementById('photo-data-grid')
-        };
-
-        // Confirmation elements
-        this.elements.confirm = {
-            details: document.getElementById('confirm-details')
+            image: document.getElementById('generated-image'),
+            photoInfo: document.getElementById('photo-info')
         };
 
         // Modal & Loading
@@ -139,11 +135,15 @@ const App = {
         this.elements.buttons.backToLocation.addEventListener('click', () => this.goToStep('location'));
         this.elements.buttons.capture.addEventListener('click', () => this.capturePhoto());
         this.elements.buttons.regenerate.addEventListener('click', () => this.regeneratePhoto());
-        this.elements.buttons.toEmail.addEventListener('click', () => this.goToEmail());
-        this.elements.buttons.backToGenerate.addEventListener('click', () => this.goToStep('generate'));
-        this.elements.buttons.sendEmail.addEventListener('click', () => this.sendEmail());
+        this.elements.buttons.download.addEventListener('click', () => this.downloadPhoto());
         this.elements.buttons.newPhoto.addEventListener('click', () => this.resetApp());
         this.elements.buttons.closeError.addEventListener('click', () => this.hideError());
+
+        // Caption input
+        this.elements.captionInput.addEventListener('input', (e) => {
+            this.state.caption = e.target.value;
+            this.elements.captionCount.textContent = e.target.value.length;
+        });
 
         // Settings tabs
         this.elements.settings.tabs.forEach(tab => {
@@ -186,11 +186,6 @@ const App = {
         this.elements.aiService.buttons.forEach(btn => {
             btn.addEventListener('click', () => this.selectAIService(btn));
         });
-
-        // Email copy checkbox
-        this.elements.email.checkboxCopy.addEventListener('change', (e) => {
-            this.elements.email.inputMyEmail.style.display = e.target.checked ? 'block' : 'none';
-        });
     },
 
     /**
@@ -228,6 +223,132 @@ const App = {
     },
 
     /**
+     * Calculate moon phase
+     * @param {Date} date
+     * @returns {object} Moon phase info
+     */
+    calculateMoonPhase(date) {
+        // Synodic month (days between new moons)
+        const synodicMonth = 29.53058867;
+
+        // Known new moon date (Jan 6, 2000)
+        const knownNewMoon = new Date(2000, 0, 6, 18, 14);
+
+        // Days since known new moon
+        const daysSince = (date - knownNewMoon) / (1000 * 60 * 60 * 24);
+
+        // Current phase (0-1)
+        const phase = (daysSince % synodicMonth) / synodicMonth;
+
+        // Phase name and emoji
+        let name, emoji;
+        if (phase < 0.0625) {
+            name = 'New Moon';
+            emoji = '🌑';
+        } else if (phase < 0.1875) {
+            name = 'Waxing Crescent';
+            emoji = '🌒';
+        } else if (phase < 0.3125) {
+            name = 'First Quarter';
+            emoji = '🌓';
+        } else if (phase < 0.4375) {
+            name = 'Waxing Gibbous';
+            emoji = '🌔';
+        } else if (phase < 0.5625) {
+            name = 'Full Moon';
+            emoji = '🌕';
+        } else if (phase < 0.6875) {
+            name = 'Waning Gibbous';
+            emoji = '🌖';
+        } else if (phase < 0.8125) {
+            name = 'Last Quarter';
+            emoji = '🌗';
+        } else if (phase < 0.9375) {
+            name = 'Waning Crescent';
+            emoji = '🌘';
+        } else {
+            name = 'New Moon';
+            emoji = '🌑';
+        }
+
+        return { name, emoji, phase };
+    },
+
+    /**
+     * Calculate season based on date and hemisphere
+     * @param {Date} date
+     * @param {number} latitude
+     * @returns {object} Season info
+     */
+    calculateSeason(date, latitude) {
+        const month = date.getMonth();
+        const day = date.getDate();
+        const isNorthern = latitude >= 0;
+
+        // Approximate season boundaries
+        let season;
+        if ((month === 2 && day >= 20) || month === 3 || month === 4 || (month === 5 && day < 21)) {
+            season = isNorthern ? 'Spring' : 'Autumn';
+        } else if ((month === 5 && day >= 21) || month === 6 || month === 7 || (month === 8 && day < 22)) {
+            season = isNorthern ? 'Summer' : 'Winter';
+        } else if ((month === 8 && day >= 22) || month === 9 || month === 10 || (month === 11 && day < 21)) {
+            season = isNorthern ? 'Autumn' : 'Spring';
+        } else {
+            season = isNorthern ? 'Winter' : 'Summer';
+        }
+
+        // Season characteristics for prompt
+        const characteristics = {
+            'Spring': 'spring season, blooming flowers, fresh green leaves, mild weather',
+            'Summer': 'summer season, bright sunlight, lush vegetation, warm atmosphere',
+            'Autumn': 'autumn season, golden and red foliage, falling leaves, warm colors',
+            'Winter': 'winter season, bare trees, cold atmosphere, muted colors'
+        };
+
+        return { name: season, description: characteristics[season] };
+    },
+
+    /**
+     * Calculate time of day context
+     * @param {Date} date
+     * @param {boolean} isDay
+     * @returns {object} Time of day info
+     */
+    calculateTimeOfDay(date, isDay) {
+        const hour = date.getHours();
+
+        let period, description;
+
+        if (hour >= 5 && hour < 7) {
+            period = 'dawn';
+            description = 'early morning dawn, soft pink and orange sky, golden hour beginning';
+        } else if (hour >= 7 && hour < 10) {
+            period = 'morning';
+            description = 'morning light, soft shadows, fresh atmosphere';
+        } else if (hour >= 10 && hour < 12) {
+            period = 'late morning';
+            description = 'late morning, bright daylight, clear visibility';
+        } else if (hour >= 12 && hour < 14) {
+            period = 'midday';
+            description = 'midday sun, harsh shadows, bright exposure';
+        } else if (hour >= 14 && hour < 17) {
+            period = 'afternoon';
+            description = 'afternoon light, warm tones, long shadows beginning';
+        } else if (hour >= 17 && hour < 19) {
+            period = 'golden hour';
+            description = 'golden hour, warm golden light, long dramatic shadows, magic hour';
+        } else if (hour >= 19 && hour < 21) {
+            period = 'dusk';
+            description = 'dusk, blue hour, twilight sky, city lights beginning';
+        } else if (hour >= 21 || hour < 5) {
+            period = 'night';
+            description = isDay ? 'evening atmosphere' : 'nighttime, dark sky, city lights, artificial illumination';
+        }
+
+        return { period, description };
+    },
+
+    /**
      * Start the app - get location and weather
      */
     async startApp() {
@@ -254,6 +375,19 @@ const App = {
             this.elements.weather.condition.textContent = this.state.weather.condition;
             this.elements.weather.humidity.textContent = `Humidity: ${this.state.weather.humidity}`;
             this.elements.weather.wind.textContent = `Wind: ${this.state.weather.windSpeed}`;
+
+            // Calculate moon phase
+            const now = new Date();
+            this.state.moonPhase = this.calculateMoonPhase(now);
+            this.elements.moonIcon.textContent = this.state.moonPhase.emoji;
+            this.elements.moonPhase.textContent = this.state.moonPhase.name;
+
+            // Calculate season
+            this.state.season = this.calculateSeason(now, this.state.location.latitude);
+            this.elements.seasonInfo.textContent = this.state.season.name;
+
+            // Calculate time of day
+            this.state.timeOfDay = this.calculateTimeOfDay(now, this.state.weather.isDay);
 
             // Enable continue button
             this.elements.buttons.toSettings.disabled = false;
@@ -334,7 +468,8 @@ const App = {
         // Reset UI
         this.elements.aiService.preview.style.display = 'none';
         this.elements.buttons.regenerate.style.display = 'none';
-        this.elements.buttons.toEmail.style.display = 'none';
+        this.elements.buttons.download.style.display = 'none';
+        this.elements.buttons.newPhoto.style.display = 'none';
         document.querySelector('.developing-animation').style.display = 'flex';
 
         // Set timestamp
@@ -351,7 +486,11 @@ const App = {
             shutter: this.state.settings.shutter,
             filter: this.state.settings.filter,
             grain: this.state.settings.grain,
-            vignette: this.state.settings.vignette
+            vignette: this.state.settings.vignette,
+            caption: this.state.caption,
+            season: this.state.season,
+            moonPhase: this.state.moonPhase,
+            timeOfDay: this.state.timeOfDay
         };
 
         try {
@@ -367,7 +506,15 @@ const App = {
             document.querySelector('.developing-animation').style.display = 'none';
             this.elements.aiService.preview.style.display = 'flex';
             this.elements.buttons.regenerate.style.display = 'inline-flex';
-            this.elements.buttons.toEmail.style.display = 'inline-flex';
+            this.elements.buttons.download.style.display = 'inline-flex';
+            this.elements.buttons.newPhoto.style.display = 'inline-flex';
+
+            // Show photo info
+            this.elements.aiService.photoInfo.innerHTML = `
+                <span>${this.state.location.city}, ${this.state.location.country}</span>
+                <span>${this.state.settings.filmName}</span>
+                <span>${this.state.season.name} | ${this.state.timeOfDay.period}</span>
+            `;
 
         } catch (error) {
             this.showError(error.message);
@@ -382,131 +529,49 @@ const App = {
     },
 
     /**
-     * Go to email step
+     * Download the generated photo
      */
-    goToEmail() {
-        // Set preview image
-        this.elements.email.previewImage.src = this.state.generatedImageUrl;
-
-        // Populate photo data
-        this.populatePhotoData();
-
-        this.goToStep('email');
-    },
-
-    /**
-     * Populate photo data grid
-     */
-    populatePhotoData() {
-        const data = [
-            { label: 'Location', value: `${this.state.location.city}, ${this.state.location.country}` },
-            { label: 'Weather', value: `${this.state.weather.condition}` },
-            { label: 'Temperature', value: this.state.weather.temperature },
-            { label: 'Film', value: this.state.settings.filmName },
-            { label: 'Format', value: this.state.settings.format },
-            { label: 'Aperture', value: this.state.settings.aperture },
-            { label: 'Shutter', value: this.state.settings.shutter },
-            { label: 'ISO', value: this.state.settings.iso },
-            { label: 'Filter', value: this.state.settings.filter },
-            { label: 'Grain', value: this.state.settings.grain }
-        ];
-
-        this.elements.email.photoDataGrid.innerHTML = data.map(item =>
-            `<span>${item.label}: <strong>${item.value}</strong></span>`
-        ).join('');
-    },
-
-    /**
-     * Send email
-     */
-    async sendEmail() {
-        const toEmail = this.elements.email.inputEmail.value.trim();
-        const message = this.elements.email.inputMessage.value.trim();
-        const sendCopy = this.elements.email.checkboxCopy.checked;
-        const myEmail = this.elements.email.inputMyEmail.value.trim();
-
-        // Validate
-        if (!toEmail) {
-            this.showError('Please enter a recipient email address.');
-            return;
-        }
-
-        if (!this.isValidEmail(toEmail)) {
-            this.showError('Please enter a valid email address.');
-            return;
-        }
-
-        if (sendCopy && !myEmail) {
-            this.showError('Please enter your email address for the copy.');
-            return;
-        }
-
-        if (sendCopy && !this.isValidEmail(myEmail)) {
-            this.showError('Please enter a valid email address for the copy.');
-            return;
-        }
-
-        // Check EmailJS configuration
-        if (!EmailService.isConfigured()) {
-            this.showError('EmailJS is not configured. Please set up config.js with your EmailJS credentials. See README.md for instructions.');
-            return;
-        }
-
-        this.showLoading('Sending your photo...');
+    async downloadPhoto() {
+        if (!this.state.generatedImageUrl) return;
 
         try {
-            const photoData = {
-                location: this.state.location,
-                weather: this.state.weather,
-                settings: this.state.settings,
-                timestamp: this.state.timestamp
-            };
+            this.showLoading('Preparing download...');
 
-            await EmailService.sendEmails({
-                toEmail: toEmail,
-                message: message,
-                imageUrl: this.state.generatedImageUrl,
-                photoData: photoData
-            }, sendCopy ? myEmail : null);
+            // Fetch the image
+            const response = await fetch(this.state.generatedImageUrl);
+            const blob = await response.blob();
 
+            // Create download link
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+
+            // Generate filename
+            const timestamp = new Date().toISOString().slice(0, 10);
+            const city = this.state.location.city.replace(/\s+/g, '-').toLowerCase();
+            link.download = `geophotoai-${city}-${timestamp}.jpg`;
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            URL.revokeObjectURL(url);
             this.hideLoading();
-
-            // Show confirmation
-            this.elements.confirm.details.innerHTML = `
-                <p>Sent to: <strong>${toEmail}</strong></p>
-                ${sendCopy ? `<p>Copy sent to: <strong>${myEmail}</strong></p>` : ''}
-                <p>Location: <strong>${this.state.location.city}, ${this.state.location.country}</strong></p>
-                <p>Film: <strong>${this.state.settings.filmName}</strong></p>
-            `;
-
-            this.goToStep('confirm');
 
         } catch (error) {
             this.hideLoading();
-            this.showError(error.message);
+            this.showError('Failed to download image. Please try again.');
         }
-    },
-
-    /**
-     * Validate email format
-     * @param {string} email
-     * @returns {boolean}
-     */
-    isValidEmail(email) {
-        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return re.test(email);
     },
 
     /**
      * Reset app to start
      */
     resetApp() {
-        // Clear form
-        this.elements.email.inputEmail.value = '';
-        this.elements.email.inputMessage.value = '';
-        this.elements.email.checkboxCopy.checked = false;
-        this.elements.email.inputMyEmail.value = '';
-        this.elements.email.inputMyEmail.style.display = 'none';
+        // Clear caption
+        this.elements.captionInput.value = '';
+        this.elements.captionCount.textContent = '0';
+        this.state.caption = '';
 
         // Reset generated image
         this.state.generatedImageUrl = null;
