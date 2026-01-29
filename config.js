@@ -12,13 +12,13 @@ const CONFIG = {
     // Get these values from https://www.emailjs.com/
 
     // Your EmailJS Public Key (Account > General > Public Key)
-    EMAILJS_PUBLIC_KEY: 'ujq30eb0nXJjojxXx',
+    EMAILJS_PUBLIC_KEY: '',
 
     // Your EmailJS Service ID (Email Services > Your Service > Service ID)
-    EMAILJS_SERVICE_ID: 'service_tgax72c',
+    EMAILJS_SERVICE_ID: '',
 
     // Your EmailJS Template ID (Email Templates > Your Template > Template ID)
-    EMAILJS_TEMPLATE_ID: 'template_g9511h6',
+    EMAILJS_TEMPLATE_ID: '',
 
     // ============================================
     // App Settings (optional customization)
